@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Krishi Kendra Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- New Libraries for Downloads -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .leaflet-container {
+            font-family: 'Inter', sans-serif;
+        }
+        .loader-spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <div id="app-container">
+        <!-- App content will be rendered here by JavaScript -->
+    </div>
+
+    <script>
+        // --- App State ---
+        let appState = 'upload'; // 'upload', 'processing', 'results'
+        let currentLang = 'en';
+        let currentResults = null;
+        let jobDetails = null;
+        let selectedFile = null;
+
+        // --- DOM Container ---
+        const appContainer = document.getElementById('app-container');
+
+        // --- Translation Data ---
+        const translations = {
+            en: {
+                title: "Krishi Kendra Pro",
+                subtitle: "Your Advanced Field Analysis Partner",
+                uploadTitle: "Upload Spectral Data",
+                uploadSubtitle: "Upload .csv or .mat file to begin analysis.",
+                fieldName: "Field Name",
+                analysisDate: "Analysis Date",
+                sensorType: "Sensor Type",
+                dropzone: "Drag & drop your .csv or .mat file here, or click to select.",
+                uploadButton: "Upload and Analyze",
+                processingTitle: "Analyzing Your Field Data...",
+                processingSubtitle: "This may take a few moments. We are processing the spectral signatures.",
+                status: "Status",
+                pending: "Pending...",
+                processing: "Processing...",
+                complete: "Complete!",
+                resultsTitle: "Field Analysis Report",
+                avgNdvi: "Average NDVI",
+                avgMoisture: "Average Soil Moisture",
+                avgSoilTemp: "Average Soil Temp.",
+                stressAlert: "Crop Stress Alert",
+                ndviMap: "NDVI Heatmap",
+                ndviDescription: "Visual representation of crop health. Green indicates healthy vegetation, while red indicates stress.",
+                moistureMap: "Soil Moisture Map",
+                moistureDescription: "Spatial distribution of soil moisture. Blue indicates higher moisture content.",
+                spectralSignature: "Average Spectral Signature",
+                spectralDescription: "Reflectance across different wavelengths. Dips can indicate specific nutrient deficiencies.",
+                healthDistribution: "Crop Health Distribution",
+                healthDistributionDescription: "Percentage of the field in different health categories.",
+                recommendationsTitle: "Key Takeaways & Recommendations",
+                downloadReport: "Download PDF Report",
+                downloadingPDF: "Generating PDF...",
+                downloadXls: "Export as XLSX",
+                downloadMat: "Export as .MAT",
+                analyzeNew: "Analyze Another File",
+                mapError: "Map library could not be loaded.",
+            },
+            hi: {
+                title: "कृषि केंद्र प्रो",
+                subtitle: "आपका उन्नत क्षेत्र विश्लेषण भागीदार",
+                uploadTitle: "स्पेक्ट्रल डेटा अपलोड करें",
+                uploadSubtitle: "विश्लेषण शुरू करने के लिए .csv या .mat फ़ाइल अपलोड करें।",
+                fieldName: "खेत का नाम",
+                analysisDate: "विश्लेषण तिथि",
+                sensorType: "सेंसर का प्रकार",
+                dropzone: "अपनी .csv या .mat फ़ाइल को यहां खींचें और छोड़ें, या चयन करने के लिए क्लिक करें।",
+                uploadButton: "अपलोड और विश्लेषण करें",
+                processingTitle: "आपके क्षेत्र डेटा का विश्लेषण किया जा रहा है...",
+                processingSubtitle: "इसमें कुछ क्षण लग सकते। हम स्पेक्ट्रल सिग्नेचर का प्रसंस्करण कर रहे हैं।",
+                status: "स्थिति",
+                pending: "लंबित...",
+                processing: "प्रसंस्करण हो रहा है...",
+                complete: "पूर्ण!",
+                resultsTitle: "क्षेत्र विश्लेषण रिपोर्ट",
+                avgNdvi: "औसत NDVI",
+                avgMoisture: "औसत मिट्टी की नमी",
+                avgSoilTemp: "औसत मिट्टी का तापमान",
+                stressAlert: "फसल तनाव चेतावनी",
+                ndviMap: "NDVI हीटमैप",
+                ndviDescription: "फसल स्वास्थ्य का दृश्य प्रतिनिधित्व। हरा रंग स्वस्थ वनस्पति को इंगित करता है, जबकि लाल तनाव को इंगित करता है।",
+                moistureMap: "मिट्टी नमी का नक्शा",
+                moistureDescription: "मिट्टी की नमी का स्थानिक वितरण। नीला रंग उच्च नमी की मात्रा को इंगित करता है।",
+                spectralSignature: "औसत स्पेक्ट्रल हस्ताक्षर",
+                spectralDescription: "विभिन्न तरंग दैर्ध्य पर परावर्तन। गिरावट विशिष्ट पोषक तत्वों की कमी का संकेत दे सकती है।",
+                healthDistribution: "फसल स्वास्थ्य वितरण",
+                healthDistributionDescription: "विभिन्न स्वास्थ्य श्रेणियों में खेत का प्रतिशत।",
+                recommendationsTitle: "मुख्य सुझाव और सिफारिशें",
+                downloadReport: "पीडीएफ रिपोर्ट डाउनलोड करें",
+                downloadingPDF: "पीडीएफ बना रहा है...",
+                downloadXls: "XLSX के रूप में निर्यात करें",
+                downloadMat: ".MAT के रूप में निर्यात करें",
+                analyzeNew: "दूसरी फ़ाइल का विश्लेषण करें",
+                mapError: "मानचित्र लाइब्रेरी लोड नहीं हो सकी।",
+            },
+        };
+
+        // --- Mock Data Generation ---
+        const generateMockResults = () => {
+            const avgNdvi = (Math.random() * 0.4 + 0.5).toFixed(2); // Range 0.5 to 0.9
+            const avgMoisture = (Math.random() * 30 + 25).toFixed(1); // Range 25 to 55
+            const stressAlert = avgNdvi < 0.65 ? "High" : (avgNdvi < 0.75 ? "Moderate" : "Low");
+            const avgSoilTemp = (Math.random() * 8 + 20).toFixed(1); // Range 20 to 28
+
+            const recommendations = [];
+            recommendations.push(`Overall crop health (NDVI: ${avgNdvi}) is currently in a ${stressAlert.toLowerCase()} state.`);
+
+            if (stressAlert === "High" || stressAlert === "Moderate") {
+                recommendations.push("ACTION: High-stress (red/yellow) areas on the NDVI map should be physically inspected for signs of pests, disease, or nutrient deficiency.");
+            } else {
+                recommendations.push("GOOD: Crop health appears stable. Continue regular monitoring.");
+            }
+
+            if (avgMoisture < 40) {
+                recommendations.push("ACTION: Soil moisture is low in some areas. Consider targeted irrigation, especially in the blue-deficient zones on the moisture map.");
+            } else {
+                recommendations.push("GOOD: Soil moisture levels appear adequate across the field.");
+            }
+
+            if(avgSoilTemp > 26) {
+                recommendations.push(`CAUTION: Soil temperature is slightly elevated (${avgSoilTemp}°C). This can increase water evaporation and affect root health. Ensure moisture levels are maintained.`);
+            }
+
+            return {
+                summary: {
+                    fieldName: "Farm-A, Punjab",
+                    date: new Date().toLocaleDateString('en-IN'),
+                    avgNdvi: avgNdvi,
+                    avgMoisture: `${avgMoisture}%`,
+                    avgSoilTemp: `${avgSoilTemp}°C`,
+                    stressAlert: stressAlert,
+                },
+                recommendations: recommendations,
+                ndviMapUrl: 'https://i.imgur.com/gK23A1j.png',
+                moistureMapUrl: 'https://i.imgur.com/S5T2p1z.png',
+                mapBounds: [[28.6139, 77.2090], [28.6239, 77.2190]],
+                charts: {
+                    spectralSignature: {
+                        labels: ['450nm', '550nm', '670nm', '750nm', '850nm', '950nm'],
+                        values: Array.from({ length: 6 }, () => Math.random() * 0.4 + 0.1),
+                    },
+                    healthDistribution: {
+                        labels: ['Healthy', 'Moderate', 'Stressed'],
+                        values: [Math.random() * 50 + 40, Math.random() * 20 + 10, Math.random() * 10 + 5],
+                    },
+                },
+            };
+        };
+
+        // --- Main Render Function ---
+        function render() {
+            const t = translations[currentLang];
+            appContainer.innerHTML = `
+                <header class="bg-white shadow-md p-4 flex justify-between items-center">
+                    <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                        </svg>
+                        <h1 class="text-2xl font-bold text-gray-800 ml-2">${t.title}</h1>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="text-sm font-medium text-gray-600 mr-2">Language:</span>
+                        <button id="lang-en" class="px-3 py-1 text-sm rounded-md ${currentLang === 'en' ? 'bg-green-600 text-white' : 'bg-gray-200'}">EN</button>
+                        <button id="lang-hi" class="px-3 py-1 text-sm rounded-md ml-2 ${currentLang === 'hi' ? 'bg-green-600 text-white' : 'bg-gray-200'}">HI</button>
+                    </div>
+                </header>
+                <main id="main-content"></main>
+            `;
+
+            const mainContent = document.getElementById('main-content');
+            if (appState === 'upload') {
+                mainContent.innerHTML = getUploadScreenHTML(t);
+                attachUploadListeners();
+            } else if (appState === 'processing') {
+                mainContent.innerHTML = getProcessingScreenHTML(t);
+                runProcessingAnimation(t);
+            } else if (appState === 'results') {
+                mainContent.innerHTML = getResultsScreenHTML(t, currentResults);
+                renderChartsAndMaps(currentResults);
+                attachResultsListeners(t);
+            }
+            
+            document.getElementById('lang-en').addEventListener('click', () => { currentLang = 'en'; render(); });
+            document.getElementById('lang-hi').addEventListener('click', () => { currentLang = 'hi'; render(); });
+        }
+
+        // --- HTML Template Functions ---
+        
+        function getUploadScreenHTML(t) {
+            const fieldName = jobDetails?.fieldName || "Farm-A, Punjab";
+            const analysisDate = jobDetails?.analysisDate || new Date().toISOString().split('T')[0];
+            const sensorType = jobDetails?.sensorType || "Multispectral Drone";
+
+            return `
+                <div class="container mx-auto p-8">
+                    <div class="bg-white rounded-xl shadow-lg p-8 max-w-3xl mx-auto">
+                        <h2 class="text-3xl font-bold text-gray-800 text-center">${t.uploadTitle}</h2>
+                        <p class="text-center text-gray-500 mb-6">${t.uploadSubtitle}</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">${t.fieldName}</label>
+                                <input id="field-name" type="text" value="${fieldName}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2"/>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">${t.analysisDate}</label>
+                                <input id="analysis-date" type="date" value="${analysisDate}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2"/>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">${t.sensorType}</label>
+                                <select id="sensor-type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2">
+                                    <option ${sensorType === 'Multispectral Drone' ? 'selected' : ''}>Multispectral Drone</option>
+                                    <option ${sensorType === 'Hyperspectral Satellite' ? 'selected' : ''}>Hyperspectral Satellite</option>
+                                    <option ${sensorType === 'Ground Sensor' ? 'selected' : ''}>Ground Sensor</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="dropzone" class="border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition border-gray-300">
+                            <input type="file" id="file-input" class="hidden" accept=".csv,.mat" />
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                            <p class="mt-2 text-sm text-gray-600">${t.dropzone}</p>
+                            <p id="file-name" class="mt-4 text-sm font-semibold text-green-700"></p>
+                        </div>
+                        
+                        <button id="upload-button" disabled class="w-full mt-6 bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-green-700 transition disabled:bg-gray-400">
+                            ${t.uploadButton}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function getProcessingScreenHTML(t) {
+            return `
+                <div class="container mx-auto p-8 flex flex-col items-center justify-center h-full">
+                    <div class="bg-white rounded-xl shadow-lg p-8 max-w-2xl w-full text-center mt-16">
+                        <h2 class="text-3xl font-bold text-gray-800">${t.processingTitle}</h2>
+                        <p class="text-gray-500 mt-2 mb-8">${t.processingSubtitle}</p>
+                        <div class="w-full bg-gray-200 rounded-full h-4 mb-4">
+                            <div id="progress-bar" class="bg-green-600 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <p class="text-lg font-semibold text-gray-700">${t.status}: <span id="status-text" class="text-green-600">${t.pending}</span></p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getResultsScreenHTML(t, results) {
+            const { summary } = results;
+            return `
+                <div class="container mx-auto p-4 md:p-8" id="report-container">
+                    <h2 class="text-4xl font-bold text-gray-800 text-center mb-8">${t.resultsTitle}</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-green-500">
+                            <h3 class="text-sm font-semibold text-gray-500">${t.avgNdvi}</h3>
+                            <p class="text-3xl font-bold text-green-800">${summary.avgNdvi}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-500">
+                            <h3 class="text-sm font-semibold text-gray-500">${t.avgMoisture}</h3>
+                            <p class="text-3xl font-bold text-blue-800">${summary.avgMoisture}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-yellow-500">
+                            <h3 class="text-sm font-semibold text-gray-500">${t.avgSoilTemp}</h3>
+                            <p class="text-3xl font-bold text-yellow-800">${summary.avgSoilTemp}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-red-500">
+                            <h3 class="text-sm font-semibold text-gray-500">${t.stressAlert}</h3>
+                            <p class="text-3xl font-bold text-red-800">${summary.stressAlert}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                        <div id="pdf-map-1" class="bg-white p-6 rounded-xl shadow-lg">
+                            <h3 class="text-xl font-bold text-gray-800">${t.ndviMap}</h3>
+                            <p class="text-sm text-gray-500 mb-4">${t.ndviDescription}</p>
+                            <div id="ndvi-map" class="h-80 w-full rounded-lg"></div>
+                        </div>
+                        <div id="pdf-map-2" class="bg-white p-6 rounded-xl shadow-lg">
+                            <h3 class="text-xl font-bold text-gray-800">${t.moistureMap}</h3>
+                            <p class="text-sm text-gray-500 mb-4">${t.moistureDescription}</p>
+                            <div id="moisture-map" class="h-80 w-full rounded-lg"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <h3 class="text-xl font-bold text-gray-800">${t.spectralSignature}</h3>
+                            <p class="text-sm text-gray-500 mb-4">${t.spectralDescription}</p>
+                            <canvas id="spectral-chart"></canvas>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <h3 class="text-xl font-bold text-gray-800">${t.healthDistribution}</h3>
+                            <p class="text-sm text-gray-500 mb-4">${t.healthDistributionDescription}</p>
+                            <canvas id="health-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+                        <h3 class="text-xl font-bold text-gray-800">${t.recommendationsTitle}</h3>
+                        <ul id="recommendations-list" class="mt-4 list-disc list-inside text-gray-700 space-y-2">
+                        </ul>
+                    </div>
+
+                </div>
+                <div class="container mx-auto p-4 md:p-8">
+                    <div class="bg-white rounded-xl shadow-lg p-6 text-center">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <button id="download-pdf" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-green-700 transition flex items-center justify-center">
+                                <span class="btn-text">${t.downloadReport}</span>
+                            </button>
+                            <button id="download-xls" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-green-700 transition">${t.downloadXls}</button>
+                            <button id="download-mat" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-green-700 transition">${t.downloadMat}</button>
+                            <button id="reset-button" class="w-full bg-gray-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-gray-600 transition">${t.analyzeNew}</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- Event Listeners & Logic ---
+
+        function attachUploadListeners() {
+            const dropzone = document.getElementById('dropzone');
+            const fileInput = document.getElementById('file-input');
+            const fileNameEl = document.getElementById('file-name');
+            const uploadButton = document.getElementById('upload-button');
+
+            const handleFile = (file) => {
+                if(file && (file.name.endsWith('.csv') || file.name.endsWith('.mat'))) {
+                    selectedFile = file;
+                    fileNameEl.textContent = file.name;
+                    uploadButton.disabled = false;
+                } else { alert('Please upload a .csv or .mat file.'); }
+            };
+
+            dropzone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
+            });
+
+            dropzone.addEventListener('dragenter', () => dropzone.classList.add('border-green-600', 'bg-green-50'));
+            dropzone.addEventListener('dragleave', () => dropzone.classList.remove('border-green-600', 'bg-green-50'));
+            dropzone.addEventListener('drop', (e) => {
+                dropzone.classList.remove('border-green-600', 'bg-green-50');
+                handleFile(e.dataTransfer.files[0]);
+            });
+
+            uploadButton.addEventListener('click', () => {
+                jobDetails = {
+                    fieldName: document.getElementById('field-name').value,
+                    analysisDate: document.getElementById('analysis-date').value,
+                    sensorType: document.getElementById('sensor-type').value,
+                    file: selectedFile
+                };
+                appState = 'processing';
+                render();
+            });
+        }
+        
+        function runProcessingAnimation(t) {
+            const progressBar = document.getElementById('progress-bar');
+            const statusText = document.getElementById('status-text');
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress = Math.min(progress + 1, 100);
+                progressBar.style.width = `${progress}%`;
+                if(progress >= 100) clearInterval(interval);
+            }, 80);
+
+            setTimeout(() => statusText.textContent = t.processing, 2000);
+            setTimeout(() => statusText.textContent = t.complete, 6000);
+
+            setTimeout(() => {
+                currentResults = generateMockResults();
+                appState = 'results';
+                render();
+            }, 8000);
+        }
+
+        function renderChartsAndMaps(results) {
+            const { charts, mapBounds, ndviMapUrl, moistureMapUrl, recommendations } = results;
+
+            new Chart(document.getElementById('spectral-chart'), {
+                type: 'line', data: { labels: charts.spectralSignature.labels, datasets: [{ label: 'Reflectance', data: charts.spectralSignature.values, borderColor: 'rgb(75, 192, 192)', backgroundColor: 'rgba(75, 192, 192, 0.5)', tension: 0.1 }] }
+            });
+
+            new Chart(document.getElementById('health-chart'), {
+                type: 'bar', data: { labels: charts.healthDistribution.labels, datasets: [{ label: '% of Field', data: charts.healthDistribution.values, backgroundColor: ['#22c55e', '#facc15', '#ef4444'] }] }, options: { indexAxis: 'y' }
+            });
+
+            const ndviMap = L.map('ndvi-map').setView(mapBounds[0], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(ndviMap);
+            L.imageOverlay(ndviMapUrl, mapBounds, { opacity: 0.7, crossOrigin: "anonymous" }).addTo(ndviMap);
+            ndviMap.scrollWheelZoom.disable();
+
+            const moistureMap = L.map('moisture-map').setView(mapBounds[0], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(moistureMap);
+            L.imageOverlay(moistureMapUrl, mapBounds, { opacity: 0.7, crossOrigin: "anonymous" }).addTo(moistureMap);
+            moistureMap.scrollWheelZoom.disable();
+
+            // Populate recommendations list
+            const recommendationsList = document.getElementById('recommendations-list');
+            recommendations.forEach(rec => {
+                const li = document.createElement('li');
+                li.textContent = rec;
+                recommendationsList.appendChild(li);
+            });
+        }
+        
+        function attachResultsListeners(t) {
+            document.getElementById('reset-button').addEventListener('click', () => {
+                appState = 'upload';
+                currentResults = null;
+                selectedFile = null;
+                render();
+            });
+            document.getElementById('download-pdf').addEventListener('click', () => downloadPDF(t));
+            document.getElementById('download-xls').addEventListener('click', downloadXLSX);
+            document.getElementById('download-mat').addEventListener('click', downloadMAT);
+        }
+
+        // --- Download Functions ---
+
+        async function downloadPDF(t) {
+            const pdfButton = document.getElementById('download-pdf');
+            const buttonText = pdfButton.querySelector('.btn-text');
+            const originalText = buttonText.textContent;
+            
+            pdfButton.disabled = true;
+            buttonText.innerHTML = `<span class="loader-spinner"></span>${t.downloadingPDF}`;
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+
+            const margin = 15;
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const contentWidth = pageWidth - margin * 2;
+            let yPos = 20;
+
+            doc.setFontSize(22);
+            doc.text("Krishi Kendra Pro - Field Analysis Report", pageWidth / 2, yPos, { align: 'center' });
+            yPos += 15;
+
+            doc.setFontSize(12);
+            doc.text(`Field Name: ${currentResults.summary.fieldName}`, margin, yPos);
+            doc.text(`Analysis Date: ${currentResults.summary.date}`, pageWidth - margin, yPos, { align: 'right' });
+            yPos += 10;
+            doc.line(margin, yPos - 5, pageWidth - margin, yPos - 5);
+
+            const ndviMapEl = document.getElementById('pdf-map-1');
+            const moistureMapEl = document.getElementById('pdf-map-2');
+            const ndviMapCanvas = await html2canvas(ndviMapEl, { useCORS: true, logging: false });
+            const moistureMapCanvas = await html2canvas(moistureMapEl, { useCORS: true, logging: false });
+            const ndviMapImg = ndviMapCanvas.toDataURL('image/png');
+            const moistureMapImg = moistureMapCanvas.toDataURL('image/png');
+            
+            doc.addImage(ndviMapImg, 'PNG', margin, yPos, contentWidth / 2 - 5, 80);
+            doc.addImage(moistureMapImg, 'PNG', pageWidth / 2 + 5, yPos, contentWidth / 2 - 5, 80);
+            yPos += 90;
+
+            const spectralCanvasImg = document.getElementById('spectral-chart').toDataURL('image/png', 1.0);
+            const healthCanvasImg = document.getElementById('health-chart').toDataURL('image/png', 1.0);
+            doc.addImage(spectralCanvasImg, 'PNG', margin, yPos, contentWidth / 2 - 5, 70);
+            doc.addImage(healthCanvasImg, 'PNG', pageWidth / 2 + 5, yPos, contentWidth / 2 - 5, 70);
+            yPos += 80;
+
+            // Add Recommendations
+            doc.setFontSize(16);
+            doc.text(t.recommendationsTitle, margin, yPos);
+            yPos += 8;
+            
+            doc.setFontSize(10);
+            doc.setTextColor(80, 80, 80);
+            currentResults.recommendations.forEach(rec => {
+                if (yPos > 270) { // Add new page if content overflows
+                    doc.addPage();
+                    yPos = 20;
+                }
+                const lines = doc.splitTextToSize(`• ${rec}`, contentWidth - 5); 
+                doc.text(lines, margin + 5, yPos);
+                yPos += (lines.length * 5) + 3;
+            });
+
+            doc.save(`Krishi_Kendra_Pro_Report_${currentResults.summary.fieldName}.pdf`);
+
+            pdfButton.disabled = false;
+            buttonText.innerHTML = originalText;
+        }
+
+        function downloadXLSX() {
+            const summaryData = [
+                { Metric: "Field Name", Value: currentResults.summary.fieldName },
+                { Metric: "Date", Value: currentResults.summary.date },
+                { Metric: "Average NDVI", Value: currentResults.summary.avgNdvi },
+                { Metric: "Average Soil Moisture", Value: currentResults.summary.avgMoisture },
+                { Metric: "Average Soil Temperature", Value: currentResults.summary.avgSoilTemp },
+                { Metric: "Crop Stress Alert", Value: currentResults.summary.stressAlert },
+            ];
+
+            const spectralData = currentResults.charts.spectralSignature.labels.map((label, index) => ({
+                Wavelength: label,
+                Reflectance: currentResults.charts.spectralSignature.values[index]
+            }));
+
+            const summarySheet = XLSX.utils.json_to_sheet(summaryData);
+            const spectralSheet = XLSX.utils.json_to_sheet(spectralData);
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+            XLSX.utils.book_append_sheet(wb, spectralSheet, "Spectral Signature");
+            
+            XLSX.writeFile(wb, `Report_${currentResults.summary.fieldName}.xlsx`);
+        }
+
+        function downloadMAT() {
+            const dataToSave = {
+                report: {
+                    summary: currentResults.summary,
+                    charts: currentResults.charts,
+                    recommendations: currentResults.recommendations
+                }
+            };
+            const dataStr = JSON.stringify(dataToSave, null, 2);
+            const blob = new Blob([dataStr], { type: "text/plain;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Report_${currentResults.summary.fieldName}.mat`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', render);
+    </script>
+
+</body>
+</html>
+
