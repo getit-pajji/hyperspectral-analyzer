@@ -110,6 +110,7 @@
         let matFile = null;
         let currentLang = 'en';
         let jobDetails = {};
+        let currentReportData = {};
         
         const appContainer = document.getElementById('app-container');
 
@@ -297,6 +298,14 @@
             }
             
             const { ndviData, moistureData } = processMergedMatrix(mergedMatrix, mergedMoisture);
+            
+            // Store results globally for download functions
+            currentReportData = {
+                ndvi: ndviData,
+                moisture: moistureData,
+                allPixels: allPixels
+            };
+
             renderResultsUI(ndviData, moistureData, allPixels);
         }
 
@@ -368,6 +377,9 @@
                 avgSoilTemp: 24.5, // Mock data
             };
             stats.stressAlert = stats.avgNdvi < 0.65 ? "High" : (stats.avgNdvi < 0.75 ? "Moderate" : "Low");
+            
+            // Store stats for downloads
+            currentReportData.stats = stats;
 
             const resultsSection = document.getElementById('results-section');
             const statusHTML = resultsSection.querySelector('#status-section') ? resultsSection.querySelector('#status-section').innerHTML : '';
@@ -411,7 +423,11 @@
             
             renderExtraVisuals(allPixels, stats, t);
 
+            // Attach listeners for download buttons
             document.getElementById('reset-button').addEventListener('click', resetUI);
+            document.getElementById('download-pdf').addEventListener('click', downloadPDF);
+            document.getElementById('download-xls').addEventListener('click', downloadXLSX);
+            document.getElementById('download-mat').addEventListener('click', downloadMAT);
         }
 
         function renderExtraVisuals(allPixels, stats, t) {
@@ -443,6 +459,7 @@
         function resetUI() {
             csvFile = null;
             matFile = null;
+            currentReportData = {};
             renderUploadUI();
             initializeDOM();
         }
@@ -510,7 +527,7 @@
             canvas.onmouseleave = () => hoverEl.textContent = '-';
         }
         
-        // **FIX STARTS HERE: RESTORING MISSING HELPER FUNCTIONS**
+        // **FIX STARTS HERE: RESTORING/ADDING HELPER FUNCTIONS**
         const readFile = (file) => new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = e => resolve(e.target.result);
@@ -518,6 +535,63 @@
             if (file.name.endsWith('.mat')) reader.readAsArrayBuffer(file);
             else reader.readAsText(file);
         });
+
+        async function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const content = document.getElementById('final-results');
+            if(!content) return;
+            const canvas = await html2canvas(content, { scale: 2 });
+            const imgData = canvas.toDataURL('image/png');
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`Krishi_Report_${jobDetails.fieldName}.pdf`);
+        }
+        
+        function downloadXLSX() {
+            const t = translations[currentLang];
+            const stats = currentReportData.stats;
+            const summaryData = [
+                { Metric: "Field Name", Value: jobDetails.fieldName },
+                { Metric: "Date", Value: jobDetails.analysisDate },
+                { Metric: t.avgNdvi, Value: stats.avgNdvi },
+                { Metric: t.avgMoisture, Value: stats.avgMoisture },
+                { Metric: t.stressAlert, Value: stats.stressAlert },
+            ];
+
+            const wb = XLSX.utils.book_new();
+            const summarySheet = XLSX.utils.json_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+            
+            if (currentReportData.ndvi) {
+                const ndviSheet = XLSX.utils.aoa_to_sheet(currentReportData.ndvi);
+                XLSX.utils.book_append_sheet(wb, ndviSheet, "NDVI Data");
+            }
+             if (currentReportData.moisture) {
+                const moistureSheet = XLSX.utils.aoa_to_sheet(currentReportData.moisture);
+                XLSX.utils.book_append_sheet(wb, moistureSheet, "Moisture Data");
+            }
+            
+            XLSX.writeFile(wb, `Report_${jobDetails.fieldName}.xlsx`);
+        }
+
+        function downloadMAT() {
+            const dataToSave = {
+                report: {
+                    jobDetails: jobDetails,
+                    stats: currentReportData.stats,
+                    ndvi: currentReportData.ndvi,
+                    moisture: currentReportData.moisture
+                }
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataToSave, null, 2));
+            const link = document.createElement("a");
+            link.setAttribute("href", dataStr);
+            link.setAttribute("download", `Report_${jobDetails.fieldName}.mat`);
+            link.click();
+        }
 
         const getStats = arr => ({ min: Math.min(...arr), max: Math.max(...arr), mean: arr.reduce((a, b) => a + b, 0) / arr.length });
         const to2D = (arr, width) => Array.from({ length: Math.ceil(arr.length / width) }, (_, i) => arr.slice(i * width, i * width + width));
@@ -552,4 +626,3 @@
     </script>
 </body>
 </html>
-
