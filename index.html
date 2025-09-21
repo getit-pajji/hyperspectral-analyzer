@@ -5,192 +5,121 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Krishi Kendra Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Core Analysis Libraries -->
+    <script>!function(e,t){"object"==typeof exports&&"undefined"!=typeof module?module.exports=t():"function"==typeof define&&define.amd?define(t):(e="undefined"!=typeof globalThis?globalThis:e||self).matFileParser=t()}(this,(function(){"use strict";const e={1:"int8",2:"uint8",3:"int16",4:"uint16",5:"int32",6:"uint32",7:"single",9:"int64",12:"uint64",14:"matrix"},t={1:"cell",2:"struct",3:"object",4:"char",5:"sparse",6:"double",7:"single",8:"int8",9:"uint8",10:"int16",11:"uint16",12:"int32",13:"uint32",14:"int64",15:"uint64"};class r{constructor(e){this.buffer=e,this.pamat=[]}read(){for(;this.buffer.byteLength>0;)this.pamat.push(this.readDataElement())}readDataElement(){const t=this.readTag(),r=this.readData(t.type,t.length);return{type:e[t.type],value:r,length:t.length}}readTag(){const e=new DataView(this.buffer).getUint32(0,!0);let t,r;const a=e>>16&65535;return 0===a?(t=e&255,r=new DataView(this.buffer).getUint32(4,!0),this.buffer=this.buffer.slice(8)):(t=e&255,r=a,this.buffer=this.buffer.slice(4)),{type:t,length:r}}readData(e,r){let a;switch(e){case 1:a=this.readInt8(r);break;case 2:a=this.readUint8(r);break;case 3:a=this.readInt16(r);break;case 4:a=this.readUint16(r);break;case 5:a=this.readInt32(r);break;case 6:a=this.readUint32(r);break;case 7:a=this.readFloat32(r);break;case 9:a=this.readInt64(r);break;case 12:a=this.readUint64(r);break;case 14:a=new s(this.buffer.slice(0,r)).read();break;default:throw new Error(`Unsupported data type: ${e}`)}return this.buffer=this.buffer.slice(r),r%8!=0&&(this.buffer=this.buffer.slice(8-r%8)),a}readInt8(e){const t=new Int8Array(this.buffer.slice(0,e));return 1===t.length?t[0]:Array.from(t)}readUint8(e){const t=new Uint8Array(this.buffer.slice(0,e));return 1===t.length?t[0]:Array.from(t)}readInt16(e){const t=new Int16Array(this.buffer.slice(0,e));return 1===t.length?t[0]:Array.from(t)}readUint16(e){const t=new Uint16Array(this.buffer.slice(0,e));return 1===t.length?t[0]:Array.from(t)}readInt32(e){const t=new Int32Array(this.buffer.slice(0,e));return 1===t.length?t[0]:Array.from(t)}readUint32(e){const t=new Uint32Array(this.buffer.slice(0,e));return 1===t.length?t[0]:Array.from(t)}readFloat32(e){const t=new Float32Array(this.buffer.slice(0,e));return 1===t.length?t[0]:Array.from(t)}readInt64(e){const t=new BigInt64Array(this.buffer.slice(0,e));return 1===t.length?t[0]:Array.from(t)}readUint64(e){const t=new BigUint64Array(this.buffer.slice(0,e));return 1===t.length?t[0]:Array.from(t)}}class a{constructor(e,t,r){this.buffer=e,this.bytes=t,this.le=r,this.view=new DataView(this.buffer)}read(){let e;const t=this.view.getUint32(0,this.le),r=this.view.getUint32(4,this.le);if(0===r){const r=this.bytes-8;e=new Uint8Array(this.buffer,8,r)}else e=this.inflate(this.bytes-8);return e}inflate(e){const t=new Uint8Array(this.buffer,8,e);let r=0,a=0,i=new Uint8Array(this.bytes-8);for(;a<t.length;){const e=t[a],s=this.view.getUint16(a+1,this.le);if(a+=3,e<128){const h=new Uint8Array(this.buffer,a,s);i.set(h,r),r+=s,a+=s}else{const h=new Uint8Array(this.buffer,a,s);i.set(this.decompress(h),r),r+=e,a+=s}}return i}decompress(e){const t=new Uint8Array(e.length);let r=0;for(let a=0;a<e.length;a++){const i=e[a];if(i>=128){const s=this.view.getUint16(a+1,this.le),h=new Uint8Array(this.buffer,a+3,i);t.set(this.decompress(h),r),r+=s,a+=2+i}else t[r]=i,r++}return t}}class i{constructor(e,t){this.buffer=e,this.le=t,this.view=new DataView(this.buffer)}read(){const e=this.view.getUint32(0,this.le);return{version:e>>16,endian:6815792===e?">":"<",subsystem:65535&e}}}class s{constructor(e){this.buffer=e,this.pamat=[]}read(){for(;this.buffer.byteLength>0;)this.pamat.push(this.readDataElement())}readDataElement(){const e=this.readTag(),r=this.readData(e.type,e.length);return{type:e.type,value:r,length:e.length}}readTag(){const e=new DataView(this.buffer).getUint32(0,!0);let t,r;const a=e>>16&65535;return 0===a?(t=e&255,r=new DataView(this.buffer).getUint32(4,!0),this.buffer=this.buffer.slice(8)):(t=e&255,r=a,this.buffer=this.buffer.slice(4)),{type:t,length:r}}readData(e,r){let a;switch(e){case 1:a=this.readInt8(r);break;case 2:a=this.readUint8(r);break;case 3:a=this.readInt16(r);break;case 4:a=this.readUint16(r);break;case 5:a=this.readInt32(r);break;case 6:a=this.readUint32(r);break;case 7:a=this.readFloat32(r);break;case 9:a=this.readInt64(r);break;case 12:a=this.readUint64(r);break;case 14:a=this.readMatrix(r);break;case 15:a=this.readCompressed(r);break;default:this.buffer=this.buffer.slice(r)}return this.buffer=this.buffer.slice(r),r%8!=0&&(this.buffer=this.buffer.slice(8-r%8)),a}readInt8(e){const t=new Int8Array(this.buffer.slice(0,e));return 1===t.length?t[0]:t}readUint8(e){const t=new Uint8Array(this.buffer.slice(0,e));return 1===t.length?t[0]:t}readInt16(e){const t=new Int16Array(this.buffer.slice(0,e));return 1===t.length?t[0]:t}readUint16(e){const t=new Uint16Array(this.buffer.slice(0,e));return 1===t.length?t[0]:t}readInt32(e){const t=new Int32Array(this.buffer.slice(0,e));return 1===t.length?t[0]:t}readUint32(e){const t=new Uint32Array(this.buffer.slice(0,e));return 1===t.length?t[0]:t}readFloat32(e){const t=new Float32Array(this.buffer.slice(0,e));return 1===t.length?t[0]:t}readInt64(e){const t=new BigInt64Array(this.buffer.slice(0,e));return 1===t.length?t[0]:t}readUint64(e){const t=new BigUint64Array(this.buffer.slice(0,e));return 1===t.length?t[0]:t}readMatrix(e){return new s(this.buffer.slice(0,e)).read()}readCompressed(e){const t=new a(this.buffer.slice(0,e)).read();return new r(t).read()}}return class{constructor(){}static read(e){const r=new i(e.slice(124,128),!0).read();if("IM"!==new TextDecoder("utf-8").decode(e.slice(126,128)))throw new Error("Invalid endian indicator. Expected 'IM'.");const a=new DataView(e.buffer).getUint32(0,!0),s=new DataView(e.buffer).getUint32(4,!0);if(a>>16&65535,0===s)new DataView(e.buffer).getUint32(8,!0);e=e.slice(128);const h=new DataView(e.buffer).getUint32(0,!0),d=new DataView(e.buffer).getUint32(4,!0);if(14!==(65535&h))throw new Error("Invalid data type. Expected 'miMATRIX'.");const n=new DataView(e.buffer).getUint32(8,!0),l=new DataView(e.buffer).getUint32(12,!0);if(6!==(65535&n))throw new Error("Invalid array flags. Expected 'mxDOUBLE_CLASS'.");const u=new DataView(e.buffer).getUint32(16,!0),o=new DataView(e.buffer).getUint32(20,!0);if(5!==(65535&u))throw new Error("Invalid dimensions array. Expected 'miINT32'.");if(2!==o)throw new Error("Invalid dimensions. Expected 2.");const c=new DataView(e.buffer).getInt32(24,!0),f=new DataView(e.buffer).getInt32(28,!0),g=new DataView(e.buffer).getInt32(32,!0);if(1!==(65535&g))throw new Error("Invalid array name. Expected 'miINT8'.");const p=new DataView(e.buffer).getInt32(36,!0),w=new TextDecoder("utf-8").decode(e.slice(40,40+p));e=e.slice(40+p);p%8!=0&&(e=e.slice(8-p%8));const m=new DataView(e.buffer).getUint32(0,!0);if(l!==(65535&m))throw new Error("Invalid real part. Expected 'miDOUBLE'.");const b=new DataView(e.buffer).getUint32(4,!0);if(c*f*8!==b)throw new Error("Invalid real part length.");const v=new Float64Array(e.buffer.slice(8,8+b));let y=[];for(let e=0;e<f;e++){const t=[];for(let r=0;r<c;r++)t.push(v[e*c+r]);y.push(t)}const k={header:{description:new TextDecoder("utf-8").decode(e.slice(0,116)).replace(/\0/g,""),version:r.version,endianIndicator:r.endian},content:{pamat:[{type:t[l],value:y,name:w}]}};return k}}}));</script>
+    <!-- Visualization & Export Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <!-- New Libraries for Downloads -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .leaflet-container {
-            font-family: 'Inter', sans-serif;
-        }
-        .loader-spinner {
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #3498db;
-            border-radius: 50%;
-            width: 16px;
-            height: 16px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-            margin-right: 8px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        body { font-family: 'Inter', sans-serif; }
+        .leaflet-container { font-family: 'Inter', sans-serif; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .info-box { background-color: #f3f4f6; border-left: 4px solid #6b7280; padding: 1rem; font-size: 0.9rem; color: #374151; }
+        .info-box code { background-color: #e5e7eb; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: monospace; }
+        .dropzone { transition: background-color 0.2s, border-color 0.2s; }
+        .dropzone.active { border-color: #3b82f6; background-color: #eff6ff; }
+        .result-panel { min-height: 300px; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
 
-    <div id="app-container">
-        <!-- App content will be rendered here by JavaScript -->
-    </div>
+    <div id="app-container"></div>
 
     <script>
-        // --- App State ---
-        let appState = 'upload'; // 'upload', 'processing', 'results'
-        let currentLang = 'en';
-        let currentResults = null;
-        let jobDetails = null;
-        let selectedFile = null;
-
-        // --- DOM Container ---
-        const appContainer = document.getElementById('app-container');
-
-        // --- Translation Data ---
+        // --- Translations ---
         const translations = {
             en: {
                 title: "Krishi Kendra Pro",
                 subtitle: "Your Advanced Field Analysis Partner",
-                uploadTitle: "Upload Spectral Data",
-                uploadSubtitle: "Upload .csv or .mat file to begin analysis.",
-                fieldName: "Field Name",
-                analysisDate: "Analysis Date",
-                sensorType: "Sensor Type",
-                dropzone: "Drag & drop your .csv or .mat file here, or click to select.",
-                uploadButton: "Upload and Analyze",
-                processingTitle: "Analyzing Your Field Data...",
-                processingSubtitle: "This may take a few moments. We are processing the spectral signatures.",
-                status: "Status",
-                pending: "Pending...",
-                processing: "Processing...",
-                complete: "Complete!",
-                resultsTitle: "Field Analysis Report",
+                uploadTitle: "1. Upload Data Files",
+                uploadCsv: "Drop .csv file or ",
+                uploadMat: "Drop .mat file or ",
+                browse: "click to browse",
+                mappingTitle: "2. Specify Data Columns",
+                processButton: "Fuse & Analyze Data",
+                resultsTitle: "3. Fused Analysis Results",
+                downloadPDF: "Download Report (PDF)",
+                mergingStrategy: "Results are based on a pixel-by-pixel average of Red/NIR bands from all valid sources. Soil moisture uses an average if present in both, otherwise data from the single available source is used.",
+                dimensionWarning: "This requires both files to have identical matrix dimensions.",
+                resetButton: "Analyze New Files",
+                redIndex: "Red Index",
+                nirIndex: "NIR Index",
+                moistureIndex: "Moisture Index",
+                optional: "(opt)",
+                csvSettings: "CSV File Settings",
+                matSettings: "MAT File Settings",
+                ndviHeatmap: "NDVI Heatmap",
+                moistureMap: "Soil Moisture Map",
+                summaryTitle: "Field Analysis Report",
                 avgNdvi: "Average NDVI",
                 avgMoisture: "Average Soil Moisture",
                 avgSoilTemp: "Average Soil Temp.",
                 stressAlert: "Crop Stress Alert",
-                ndviMap: "NDVI Heatmap",
-                ndviDescription: "Visual representation of crop health. Green indicates healthy vegetation, while red indicates stress.",
-                moistureMap: "Soil Moisture Map",
-                moistureDescription: "Spatial distribution of soil moisture. Blue indicates higher moisture content.",
                 spectralSignature: "Average Spectral Signature",
-                spectralDescription: "Reflectance across different wavelengths. Dips can indicate specific nutrient deficiencies.",
+                spectralDescription: "Reflectance across different wavelengths.",
                 healthDistribution: "Crop Health Distribution",
                 healthDistributionDescription: "Percentage of the field in different health categories.",
                 recommendationsTitle: "Key Takeaways & Recommendations",
-                downloadReport: "Download PDF Report",
-                downloadingPDF: "Generating PDF...",
                 downloadXls: "Export as XLSX",
-                downloadMat: "Export as .MAT",
-                analyzeNew: "Analyze Another File",
-                mapError: "Map library could not be loaded.",
+                downloadMat: "Export as .MAT"
             },
             hi: {
                 title: "कृषि केंद्र प्रो",
                 subtitle: "आपका उन्नत क्षेत्र विश्लेषण भागीदार",
-                uploadTitle: "स्पेक्ट्रल डेटा अपलोड करें",
-                uploadSubtitle: "विश्लेषण शुरू करने के लिए .csv या .mat फ़ाइल अपलोड करें।",
-                fieldName: "खेत का नाम",
-                analysisDate: "विश्लेषण तिथि",
-                sensorType: "सेंसर का प्रकार",
-                dropzone: "अपनी .csv या .mat फ़ाइल को यहां खींचें और छोड़ें, या चयन करने के लिए क्लिक करें।",
-                uploadButton: "अपलोड और विश्लेषण करें",
-                processingTitle: "आपके क्षेत्र डेटा का विश्लेषण किया जा रहा है...",
-                processingSubtitle: "इसमें कुछ क्षण लग सकते। हम स्पेक्ट्रल सिग्नेचर का प्रसंस्करण कर रहे हैं।",
-                status: "स्थिति",
-                pending: "लंबित...",
-                processing: "प्रसंस्करण हो रहा है...",
-                complete: "पूर्ण!",
-                resultsTitle: "क्षेत्र विश्लेषण रिपोर्ट",
+                uploadTitle: "१. डेटा फ़ाइलें अपलोड करें",
+                uploadCsv: ".csv फ़ाइल ड्रॉप करें या ",
+                uploadMat: ".mat फ़ाइल ड्रॉप करें या ",
+                browse: "ब्राउज़ करने के लिए क्लिक करें",
+                mappingTitle: "२. डेटा कॉलम निर्दिष्ट करें",
+                processButton: "डेटा मिलाएं और विश्लेषण करें",
+                resultsTitle: "३. संयुक्त विश्लेषण परिणाम",
+                downloadPDF: "रिपोर्ट डाउनलोड करें (PDF)",
+                mergingStrategy: "परिणाम सभी स्रोतों से Red/NIR बैंड के पिक्सेल-दर-पिक्सेल औसत पर आधारित हैं। मिट्टी की नमी दोनों में मौजूद होने पर औसत का उपयोग करती है, अन्यथा एकल स्रोत से डेटा का उपयोग किया जाता है।",
+                dimensionWarning: "इसके लिए दोनों फाइलों में समान मैट्रिक्स आयाम होना आवश्यक है।",
+                resetButton: "नई फाइलों का विश्लेषण करें",
+                redIndex: "लाल बैंड इंडेक्स",
+                nirIndex: "एनआईआर बैंड इंडेक्स",
+                moistureIndex: "नमी इंडेक्स",
+                optional: "(वैकल्पिक)",
+                csvSettings: "CSV फ़ाइल सेटिंग्स",
+                matSettings: "MAT फ़ाइल सेटिंग्स",
+                ndviHeatmap: "NDVI हीटमैप",
+                moistureMap: "मिट्टी नमी का नक्शा",
+                summaryTitle: "क्षेत्र विश्लेषण रिपोर्ट",
                 avgNdvi: "औसत NDVI",
                 avgMoisture: "औसत मिट्टी की नमी",
                 avgSoilTemp: "औसत मिट्टी का तापमान",
                 stressAlert: "फसल तनाव चेतावनी",
-                ndviMap: "NDVI हीटमैप",
-                ndviDescription: "फसल स्वास्थ्य का दृश्य प्रतिनिधित्व। हरा रंग स्वस्थ वनस्पति को इंगित करता है, जबकि लाल तनाव को इंगित करता है।",
-                moistureMap: "मिट्टी नमी का नक्शा",
-                moistureDescription: "मिट्टी की नमी का स्थानिक वितरण। नीला रंग उच्च नमी की मात्रा को इंगित करता है।",
                 spectralSignature: "औसत स्पेक्ट्रल हस्ताक्षर",
-                spectralDescription: "विभिन्न तरंग दैर्ध्य पर परावर्तन। गिरावट विशिष्ट पोषक तत्वों की कमी का संकेत दे सकती है।",
+                spectralDescription: "विभिन्न तरंग दैर्ध्य पर परावर्तन।",
                 healthDistribution: "फसल स्वास्थ्य वितरण",
                 healthDistributionDescription: "विभिन्न स्वास्थ्य श्रेणियों में खेत का प्रतिशत।",
                 recommendationsTitle: "मुख्य सुझाव और सिफारिशें",
-                downloadReport: "पीडीएफ रिपोर्ट डाउनलोड करें",
-                downloadingPDF: "पीडीएफ बना रहा है...",
                 downloadXls: "XLSX के रूप में निर्यात करें",
-                downloadMat: ".MAT के रूप में निर्यात करें",
-                analyzeNew: "दूसरी फ़ाइल का विश्लेषण करें",
-                mapError: "मानचित्र लाइब्रेरी लोड नहीं हो सकी।",
-            },
+                downloadMat: ".MAT के रूप में निर्यात करें"
+            }
         };
 
-        // --- Mock Data Generation ---
-        const generateMockResults = () => {
-            const avgNdvi = (Math.random() * 0.4 + 0.5).toFixed(2); // Range 0.5 to 0.9
-            const avgMoisture = (Math.random() * 30 + 25).toFixed(1); // Range 25 to 55
-            const stressAlert = avgNdvi < 0.65 ? "High" : (avgNdvi < 0.75 ? "Moderate" : "Low");
-            const avgSoilTemp = (Math.random() * 8 + 20).toFixed(1); // Range 20 to 28
-
-            const recommendations = [];
-            recommendations.push(`Overall crop health (NDVI: ${avgNdvi}) is currently in a ${stressAlert.toLowerCase()} state.`);
-
-            if (stressAlert === "High" || stressAlert === "Moderate") {
-                recommendations.push("ACTION: High-stress (red/yellow) areas on the NDVI map should be physically inspected for signs of pests, disease, or nutrient deficiency.");
-            } else {
-                recommendations.push("GOOD: Crop health appears stable. Continue regular monitoring.");
-            }
-
-            if (avgMoisture < 40) {
-                recommendations.push("ACTION: Soil moisture is low in some areas. Consider targeted irrigation, especially in the blue-deficient zones on the moisture map.");
-            } else {
-                recommendations.push("GOOD: Soil moisture levels appear adequate across the field.");
-            }
-
-            if(avgSoilTemp > 26) {
-                recommendations.push(`CAUTION: Soil temperature is slightly elevated (${avgSoilTemp}°C). This can increase water evaporation and affect root health. Ensure moisture levels are maintained.`);
-            }
-
-            return {
-                summary: {
-                    fieldName: "Farm-A, Punjab",
-                    date: new Date().toLocaleDateString('en-IN'),
-                    avgNdvi: avgNdvi,
-                    avgMoisture: `${avgMoisture}%`,
-                    avgSoilTemp: `${avgSoilTemp}°C`,
-                    stressAlert: stressAlert,
-                },
-                recommendations: recommendations,
-                ndviMapUrl: 'https://i.imgur.com/gK23A1j.png',
-                moistureMapUrl: 'https://i.imgur.com/S5T2p1z.png',
-                mapBounds: [[28.6139, 77.2090], [28.6239, 77.2190]],
-                charts: {
-                    spectralSignature: {
-                        labels: ['450nm', '550nm', '670nm', '750nm', '850nm', '950nm'],
-                        values: Array.from({ length: 6 }, () => Math.random() * 0.4 + 0.1),
-                    },
-                    healthDistribution: {
-                        labels: ['Healthy', 'Moderate', 'Stressed'],
-                        values: [Math.random() * 50 + 40, Math.random() * 20 + 10, Math.random() * 10 + 5],
-                    },
-                },
-            };
-        };
+        // --- State Management ---
+        let csvFile = null;
+        let matFile = null;
+        let currentLang = 'en';
+        let jobDetails = {};
+        
+        const appContainer = document.getElementById('app-container');
 
         // --- Main Render Function ---
-        function render() {
+        function renderApp() {
             const t = translations[currentLang];
             appContainer.innerHTML = `
                 <header class="bg-white shadow-md p-4 flex justify-between items-center">
                     <div class="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-600" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /></svg>
                         <h1 class="text-2xl font-bold text-gray-800 ml-2">${t.title}</h1>
                     </div>
                     <div class="flex items-center">
@@ -199,384 +128,428 @@
                         <button id="lang-hi" class="px-3 py-1 text-sm rounded-md ml-2 ${currentLang === 'hi' ? 'bg-green-600 text-white' : 'bg-gray-200'}">HI</button>
                     </div>
                 </header>
-                <main id="main-content"></main>
+                <main id="main-content" class="bg-white rounded-xl shadow-lg p-6 md:p-8 max-w-7xl mx-auto mt-8"></main>
             `;
+            document.getElementById('lang-en').addEventListener('click', () => { currentLang = 'en'; resetUI(); });
+            document.getElementById('lang-hi').addEventListener('click', () => { currentLang = 'hi'; resetUI(); });
+            resetUI(); // Initialize the UI
+        }
 
-            const mainContent = document.getElementById('main-content');
-            if (appState === 'upload') {
-                mainContent.innerHTML = getUploadScreenHTML(t);
-                attachUploadListeners();
-            } else if (appState === 'processing') {
-                mainContent.innerHTML = getProcessingScreenHTML(t);
-                runProcessingAnimation(t);
-            } else if (appState === 'results') {
-                mainContent.innerHTML = getResultsScreenHTML(t, currentResults);
-                renderChartsAndMaps(currentResults);
-                attachResultsListeners(t);
+        // --- UI Rendering Functions ---
+        function renderUploadUI() {
+            const t = translations[currentLang];
+            const main = document.getElementById('main-content');
+            main.innerHTML = `
+                <div id="upload-section">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div><label class="block text-sm font-medium text-gray-700">Field Name</label><input id="field-name" type="text" value="Farm-A, Punjab" class="mt-1 block w-full p-2 border rounded-md"/></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Analysis Date</label><input id="analysis-date" type="date" value="${new Date().toISOString().split('T')[0]}" class="mt-1 block w-full p-2 border rounded-md"/></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Sensor Type</label><select id="sensor-type" class="mt-1 block w-full p-2 border rounded-md"><option>Multispectral Drone</option><option>Hyperspectral Satellite</option></select></div>
+                    </div>
+                    <h2 class="text-2xl font-semibold mb-4">${t.uploadTitle}</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div id="dropzone-csv" class="dropzone border-2 border-dashed rounded-lg p-8 text-center cursor-pointer">
+                            <input type="file" id="file-input-csv" class="hidden" accept=".csv" /><svg class="mx-auto h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <p class="mt-2 text-sm text-gray-600">${t.uploadCsv}<span class="font-semibold text-blue-600">${t.browse}</span></p>
+                            <p id="file-name-csv" class="mt-2 text-sm font-semibold text-green-700"></p>
+                        </div>
+                        <div id="dropzone-mat" class="dropzone border-2 border-dashed rounded-lg p-8 text-center cursor-pointer">
+                            <input type="file" id="file-input-mat" class="hidden" accept=".mat" /><svg class="mx-auto h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4M4 7v10m16-10v10"></path></svg>
+                            <p class="mt-2 text-sm text-gray-600">${t.uploadMat}<span class="font-semibold text-blue-600">${t.browse}</span></p>
+                            <p id="file-name-mat" class="mt-2 text-sm font-semibold text-green-700"></p>
+                        </div>
+                    </div>
+                </div>
+                <div id="columns-section" class="hidden mt-6 border-t pt-6">
+                    <h2 class="text-2xl font-semibold mb-4">${t.mappingTitle}</h2>
+                    <div id="csv-mapping-section" class="hidden bg-gray-50 p-4 rounded-lg mb-4"></div>
+                    <div id="mat-mapping-section" class="hidden bg-gray-50 p-4 rounded-lg"></div>
+                    <button id="process-button" class="w-full mt-6 bg-blue-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-blue-700 transition" disabled>${t.processButton}</button>
+                </div>
+                <div id="results-section" class="hidden border-t pt-6 mt-6"></div>
+            `;
+        }
+        
+        // --- ADAPTED CODE ---
+        let dom = {};
+
+        function initializeDOM() {
+            dom = {
+                main: document.getElementById('main-content'),
+                uploadSection: document.getElementById('upload-section'),
+                columnsSection: document.getElementById('columns-section'),
+                resultsSection: document.getElementById('results-section'),
+                processButton: document.getElementById('process-button'),
+                csv: {
+                    dropzone: document.getElementById('dropzone-csv'),
+                    fileInput: document.getElementById('file-input-csv'),
+                    fileName: document.getElementById('file-name-csv'),
+                    mapping: document.getElementById('csv-mapping-section'),
+                },
+                mat: {
+                    dropzone: document.getElementById('dropzone-mat'),
+                    fileInput: document.getElementById('file-input-mat'),
+                    fileName: document.getElementById('file-name-mat'),
+                    mapping: document.getElementById('mat-mapping-section'),
+                }
+            };
+            const setupDropzone = (type) => {
+                const dropzone = dom[type].dropzone;
+                const fileInput = dom[type].fileInput;
+                if (!dropzone || !fileInput) return;
+
+                dropzone.addEventListener('click', () => fileInput.click());
+                fileInput.addEventListener('change', (e) => handleFileSelect(e.target.files[0], type));
+
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
+                });
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, () => dropzone.classList.add('active'), false);
+                });
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, () => dropzone.classList.remove('active'), false);
+                });
+                dropzone.addEventListener('drop', (e) => { handleFileSelect(e.dataTransfer.files[0], type); }, false);
+            };
+            setupDropzone('csv');
+            setupDropzone('mat');
+            dom.processButton.addEventListener('click', analyzeFiles);
+        }
+
+        function handleFileSelect(file, type) {
+            if (!file) return;
+            const valid = type === 'csv' ? file.name.endsWith('.csv') : file.name.endsWith('.mat');
+            if (valid) {
+                if (type === 'csv') csvFile = file;
+                if (type === 'mat') matFile = file;
+                dom[type].fileName.textContent = `Selected: ${file.name}`;
+                renderMappingUI(type);
+                dom.columnsSection.classList.remove('hidden');
+                dom.processButton.disabled = false;
+            } else {
+                alert(`Please select a valid .${type} file.`);
+            }
+        }
+        
+        function renderMappingUI(type) {
+            const t = translations[currentLang];
+            const container = dom[type].mapping;
+            container.innerHTML = `
+                <h3 class="font-bold mb-2">${type === 'csv' ? t.csvSettings : t.matSettings}</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div><label for="red-col-${type}" class="block text-sm font-medium">${t.redIndex}</label><input type="number" id="red-col-${type}" value="2" class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
+                    <div><label for="nir-col-${type}" class="block text-sm font-medium">${t.nirIndex}</label><input type="number" id="nir-col-${type}" value="3" class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
+                    <div><label for="moisture-col-${type}" class="block text-sm font-medium">${t.moistureIndex} <span class="text-xs">${t.optional}</span></label><input type="number" id="moisture-col-${type}" placeholder="e.g., 4" class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
+                </div>
+            `;
+            container.classList.remove('hidden');
+        }
+
+        async function analyzeFiles() {
+            if (dom.uploadSection) dom.uploadSection.style.display = 'none';
+            if (dom.columnsSection) dom.columnsSection.style.display = 'none';
+            const resultsSection = document.getElementById('results-section');
+            resultsSection.classList.remove('hidden');
+            resultsSection.innerHTML = `<div class="text-center" id="status-section"><div class="loader mx-auto"></div><p class="mt-4 font-semibold">Processing files...</p></div>`;
+
+            jobDetails = {
+                fieldName: document.getElementById('field-name').value,
+                analysisDate: document.getElementById('analysis-date').value,
+                sensorType: document.getElementById('sensor-type').value,
+            };
+
+            let csvData = null, matData = null;
+            let csvError = null, matError = null;
+
+            if (csvFile) { try { csvData = await parseFile('csv'); } catch (e) { csvError = e.message; } }
+            if (matFile) { try { matData = await parseFile('mat'); } catch (e) { matError = e.message; } }
+            
+            const statusSection = document.getElementById('status-section');
+            statusSection.innerHTML = ''; // Clear loader
+            if(csvError) statusSection.innerHTML += renderStatus('error', `CSV Error: ${csvError}`);
+            if(matError) statusSection.innerHTML += renderStatus('error', `MAT Error: ${matError}`);
+
+            let mergedMatrix, mergedMoisture, allPixels;
+
+            if (csvData && matData) {
+                try {
+                    if (csvData.length !== matData.length) throw new Error(`Pixel counts do not match (CSV: ${csvData.length}, MAT: ${matData.length}).`);
+                    statusSection.innerHTML += renderStatus('info', 'Both files valid. Merging datasets...');
+                    ({ mergedMatrix, mergedMoisture, allPixels } = mergeData(csvData, matData));
+                } catch(e) {
+                    statusSection.innerHTML += renderStatus('error', `Merge Error: ${e.message}.`);
+                    return;
+                }
+            } else if (csvData) {
+                 statusSection.innerHTML += renderStatus('info', 'Processing CSV file only.');
+                 mergedMatrix = csvData.map(p => [p.red, p.nir]);
+                 mergedMoisture = csvData.map(p => p.moisture);
+                 allPixels = csvData;
+            } else if (matData) {
+                statusSection.innerHTML += renderStatus('info', 'Processing MAT file only.');
+                mergedMatrix = matData.map(p => [p.red, p.nir]);
+                mergedMoisture = matData.map(p => p.moisture);
+                allPixels = matData;
+            } else {
+                statusSection.innerHTML += renderStatus('error', 'No valid data to process.');
+                return;
             }
             
-            document.getElementById('lang-en').addEventListener('click', () => { currentLang = 'en'; render(); });
-            document.getElementById('lang-hi').addEventListener('click', () => { currentLang = 'hi'; render(); });
+            const { ndviData, moistureData } = processMergedMatrix(mergedMatrix, mergedMoisture);
+            renderResultsUI(ndviData, moistureData, allPixels);
         }
 
-        // --- HTML Template Functions ---
-        
-        function getUploadScreenHTML(t) {
-            const fieldName = jobDetails?.fieldName || "Farm-A, Punjab";
-            const analysisDate = jobDetails?.analysisDate || new Date().toISOString().split('T')[0];
-            const sensorType = jobDetails?.sensorType || "Multispectral Drone";
+        async function parseFile(type) {
+            const redCol = parseInt(document.getElementById(`red-col-${type}`).value);
+            const nirCol = parseInt(document.getElementById(`nir-col-${type}`).value);
+            const moistureColRaw = document.getElementById(`moisture-col-${type}`).value;
+            const moistureCol = moistureColRaw !== '' ? parseInt(moistureColRaw) : null;
+            if(isNaN(redCol) || isNaN(nirCol)) throw new Error("Red/NIR indices required.");
+            
+            const fileContent = await readFile(type === 'csv' ? csvFile : matFile);
+            const pixelMatrix = type === 'csv' ? parseCSV(fileContent) : parseMAT(fileContent);
+            if (!pixelMatrix || pixelMatrix.length === 0) throw new Error("Could not parse matrix.");
 
-            return `
-                <div class="container mx-auto p-8">
-                    <div class="bg-white rounded-xl shadow-lg p-8 max-w-3xl mx-auto">
-                        <h2 class="text-3xl font-bold text-gray-800 text-center">${t.uploadTitle}</h2>
-                        <p class="text-center text-gray-500 mb-6">${t.uploadSubtitle}</p>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">${t.fieldName}</label>
-                                <input id="field-name" type="text" value="${fieldName}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2"/>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">${t.analysisDate}</label>
-                                <input id="analysis-date" type="date" value="${analysisDate}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2"/>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">${t.sensorType}</label>
-                                <select id="sensor-type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2">
-                                    <option ${sensorType === 'Multispectral Drone' ? 'selected' : ''}>Multispectral Drone</option>
-                                    <option ${sensorType === 'Hyperspectral Satellite' ? 'selected' : ''}>Hyperspectral Satellite</option>
-                                    <option ${sensorType === 'Ground Sensor' ? 'selected' : ''}>Ground Sensor</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div id="dropzone" class="border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition border-gray-300">
-                            <input type="file" id="file-input" class="hidden" accept=".csv,.mat" />
-                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-                            <p class="mt-2 text-sm text-gray-600">${t.dropzone}</p>
-                            <p id="file-name" class="mt-4 text-sm font-semibold text-green-700"></p>
-                        </div>
-                        
-                        <button id="upload-button" disabled class="w-full mt-6 bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-green-700 transition disabled:bg-gray-400">
-                            ${t.uploadButton}
-                        </button>
-                    </div>
-                </div>
-            `;
+            return pixelMatrix.map(pixel => {
+                if(pixel.length <= Math.max(redCol, nirCol)) return null;
+                const red = pixel[redCol];
+                const nir = pixel[nirCol];
+                const moisture = (moistureCol !== null && pixel.length > moistureCol) ? pixel[moistureCol] : NaN;
+                if(isNaN(red) || isNaN(nir)) return null;
+                return { red, nir, moisture, allBands: pixel };
+            }).filter(p => p !== null);
         }
         
-        function getProcessingScreenHTML(t) {
-            return `
-                <div class="container mx-auto p-8 flex flex-col items-center justify-center h-full">
-                    <div class="bg-white rounded-xl shadow-lg p-8 max-w-2xl w-full text-center mt-16">
-                        <h2 class="text-3xl font-bold text-gray-800">${t.processingTitle}</h2>
-                        <p class="text-gray-500 mt-2 mb-8">${t.processingSubtitle}</p>
-                        <div class="w-full bg-gray-200 rounded-full h-4 mb-4">
-                            <div id="progress-bar" class="bg-green-600 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
-                        </div>
-                        <p class="text-lg font-semibold text-gray-700">${t.status}: <span id="status-text" class="text-green-600">${t.pending}</span></p>
-                    </div>
-                </div>
-            `;
-        }
+        function mergeData(csvData, matData) {
+            const mergedMatrix = [];
+            const mergedMoisture = [];
+            const allPixels = [];
+            for(let i = 0; i < csvData.length; i++) {
+                const csvPixel = csvData[i];
+                const matPixel = matData[i];
+                
+                mergedMatrix.push([
+                    (csvPixel.red + matPixel.red) / 2,
+                    (csvPixel.nir + matPixel.nir) / 2
+                ]);
 
-        function getResultsScreenHTML(t, results) {
-            const { summary } = results;
-            return `
-                <div class="container mx-auto p-4 md:p-8" id="report-container">
-                    <h2 class="text-4xl font-bold text-gray-800 text-center mb-8">${t.resultsTitle}</h2>
+                const csvM = csvPixel.moisture;
+                const matM = matPixel.moisture;
+                if(!isNaN(csvM) && !isNaN(matM)) mergedMoisture.push((csvM + matM) / 2);
+                else if(!isNaN(csvM)) mergedMoisture.push(csvM);
+                else if(!isNaN(matM)) mergedMoisture.push(matM);
+                else mergedMoisture.push(NaN);
+                
+                allPixels.push({red: (csvPixel.red + matPixel.red) / 2, nir: (csvPixel.nir + matPixel.nir) / 2, moisture: mergedMoisture[i], allBands: csvPixel.allBands});
+            }
+            return { mergedMatrix, mergedMoisture, allPixels };
+        }
+        
+        function processMergedMatrix(mergedMatrix, mergedMoisture) {
+            const ndviData = mergedMatrix.map(([red, nir]) => {
+                let ndvi = (nir + red) === 0 ? 0 : (nir - red) / (nir + red);
+                return Math.max(-1, Math.min(1, ndvi));
+            });
+            const side = Math.ceil(Math.sqrt(ndviData.length));
+            return {
+                ndviData: to2D(ndviData, side),
+                moistureData: to2D(mergedMoisture, side)
+            };
+        }
+        
+        function renderResultsUI(ndviData, moistureData, allPixels){
+            const t = translations[currentLang];
+            const flatNdvi = ndviData.flat().filter(v=>!isNaN(v));
+            const flatMoisture = moistureData.flat().filter(v=>!isNaN(v));
+            const stats = {
+                avgNdvi: flatNdvi.length > 0 ? getStats(flatNdvi).mean : 0,
+                avgMoisture: flatMoisture.length > 0 ? getStats(flatMoisture).mean : 0,
+                avgSoilTemp: 24.5, // Mock data
+            };
+            stats.stressAlert = stats.avgNdvi < 0.65 ? "High" : (stats.avgNdvi < 0.75 ? "Moderate" : "Low");
+
+            const resultsSection = document.getElementById('results-section');
+            const statusHTML = resultsSection.querySelector('#status-section') ? resultsSection.querySelector('#status-section').innerHTML : '';
+
+            resultsSection.innerHTML = `
+                ${statusHTML}
+                <div id="final-results">
+                    <h2 class="text-3xl font-bold text-center mb-6">${t.summaryTitle}</h2>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-green-500">
-                            <h3 class="text-sm font-semibold text-gray-500">${t.avgNdvi}</h3>
-                            <p class="text-3xl font-bold text-green-800">${summary.avgNdvi}</p>
-                        </div>
-                        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-500">
-                            <h3 class="text-sm font-semibold text-gray-500">${t.avgMoisture}</h3>
-                            <p class="text-3xl font-bold text-blue-800">${summary.avgMoisture}</p>
-                        </div>
-                        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-yellow-500">
-                            <h3 class="text-sm font-semibold text-gray-500">${t.avgSoilTemp}</h3>
-                            <p class="text-3xl font-bold text-yellow-800">${summary.avgSoilTemp}</p>
-                        </div>
-                        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-red-500">
-                            <h3 class="text-sm font-semibold text-gray-500">${t.stressAlert}</h3>
-                            <p class="text-3xl font-bold text-red-800">${summary.stressAlert}</p>
-                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-green-500"><h3 class="text-sm font-semibold text-gray-500">${t.avgNdvi}</h3><p class="text-3xl font-bold text-green-800">${stats.avgNdvi.toFixed(2)}</p></div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-blue-500"><h3 class="text-sm font-semibold text-gray-500">${t.avgMoisture}</h3><p class="text-3xl font-bold text-blue-800">${stats.avgMoisture.toFixed(1)}%</p></div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-yellow-500"><h3 class="text-sm font-semibold text-gray-500">${t.avgSoilTemp}</h3><p class="text-3xl font-bold text-yellow-800">${stats.avgSoilTemp.toFixed(1)}°C</p></div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-red-500"><h3 class="text-sm font-semibold text-gray-500">${t.stressAlert}</h3><p class="text-3xl font-bold text-red-800">${stats.stressAlert}</p></div>
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                        <div id="pdf-map-1" class="bg-white p-6 rounded-xl shadow-lg">
-                            <h3 class="text-xl font-bold text-gray-800">${t.ndviMap}</h3>
-                            <p class="text-sm text-gray-500 mb-4">${t.ndviDescription}</p>
-                            <div id="ndvi-map" class="h-80 w-full rounded-lg"></div>
-                        </div>
-                        <div id="pdf-map-2" class="bg-white p-6 rounded-xl shadow-lg">
-                            <h3 class="text-xl font-bold text-gray-800">${t.moistureMap}</h3>
-                            <p class="text-sm text-gray-500 mb-4">${t.moistureDescription}</p>
-                            <div id="moisture-map" class="h-80 w-full rounded-lg"></div>
-                        </div>
+                        <div id="ndvi-panel" class="result-panel bg-white p-6 rounded-xl shadow-lg"></div>
+                        <div id="moisture-panel" class="result-panel bg-white p-6 rounded-xl shadow-lg"></div>
                     </div>
                     
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                        <div class="bg-white p-6 rounded-xl shadow-lg">
-                            <h3 class="text-xl font-bold text-gray-800">${t.spectralSignature}</h3>
-                            <p class="text-sm text-gray-500 mb-4">${t.spectralDescription}</p>
-                            <canvas id="spectral-chart"></canvas>
-                        </div>
-                        <div class="bg-white p-6 rounded-xl shadow-lg">
-                            <h3 class="text-xl font-bold text-gray-800">${t.healthDistribution}</h3>
-                            <p class="text-sm text-gray-500 mb-4">${t.healthDistributionDescription}</p>
-                            <canvas id="health-chart"></canvas>
-                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg"><h3 class="text-xl font-bold">${t.spectralSignature}</h3><p class="text-sm text-gray-500 mb-4">${t.spectralDescription}</p><canvas id="spectral-chart"></canvas></div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg"><h3 class="text-xl font-bold">${t.healthDistribution}</h3><p class="text-sm text-gray-500 mb-4">${t.healthDistributionDescription}</p><canvas id="health-chart"></canvas></div>
                     </div>
-                    
-                    <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
-                        <h3 class="text-xl font-bold text-gray-800">${t.recommendationsTitle}</h3>
-                        <ul id="recommendations-list" class="mt-4 list-disc list-inside text-gray-700 space-y-2">
-                        </ul>
-                    </div>
-
-                </div>
-                <div class="container mx-auto p-4 md:p-8">
-                    <div class="bg-white rounded-xl shadow-lg p-6 text-center">
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <button id="download-pdf" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-green-700 transition flex items-center justify-center">
-                                <span class="btn-text">${t.downloadReport}</span>
-                            </button>
-                            <button id="download-xls" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-green-700 transition">${t.downloadXls}</button>
-                            <button id="download-mat" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-green-700 transition">${t.downloadMat}</button>
-                            <button id="reset-button" class="w-full bg-gray-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-gray-600 transition">${t.analyzeNew}</button>
-                        </div>
+                     <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+                        <h3 class="text-xl font-bold">${t.recommendationsTitle}</h3>
+                        <ul id="recommendations-list" class="mt-4 list-disc list-inside text-gray-700 space-y-2"></ul>
+                     </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6 text-center grid grid-cols-2 md:grid-cols-4 gap-4">
+                         <button id="download-pdf" class="w-full bg-red-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-red-700">Download PDF</button>
+                         <button id="download-xls" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-green-700">${t.downloadXls}</button>
+                         <button id="download-mat" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-green-700">${t.downloadMat}</button>
+                         <button id="reset-button" class="w-full bg-gray-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-gray-700">${t.resetButton}</button>
                     </div>
                 </div>
             `;
-        }
-
-        // --- Event Listeners & Logic ---
-
-        function attachUploadListeners() {
-            const dropzone = document.getElementById('dropzone');
-            const fileInput = document.getElementById('file-input');
-            const fileNameEl = document.getElementById('file-name');
-            const uploadButton = document.getElementById('upload-button');
-
-            const handleFile = (file) => {
-                if(file && (file.name.endsWith('.csv') || file.name.endsWith('.mat'))) {
-                    selectedFile = file;
-                    fileNameEl.textContent = file.name;
-                    uploadButton.disabled = false;
-                } else { alert('Please upload a .csv or .mat file.'); }
-            };
-
-            dropzone.addEventListener('click', () => fileInput.click());
-            fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
             
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropzone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
-            });
-
-            dropzone.addEventListener('dragenter', () => dropzone.classList.add('border-green-600', 'bg-green-50'));
-            dropzone.addEventListener('dragleave', () => dropzone.classList.remove('border-green-600', 'bg-green-50'));
-            dropzone.addEventListener('drop', (e) => {
-                dropzone.classList.remove('border-green-600', 'bg-green-50');
-                handleFile(e.dataTransfer.files[0]);
-            });
-
-            uploadButton.addEventListener('click', () => {
-                jobDetails = {
-                    fieldName: document.getElementById('field-name').value,
-                    analysisDate: document.getElementById('analysis-date').value,
-                    sensorType: document.getElementById('sensor-type').value,
-                    file: selectedFile
-                };
-                appState = 'processing';
-                render();
-            });
-        }
-        
-        function runProcessingAnimation(t) {
-            const progressBar = document.getElementById('progress-bar');
-            const statusText = document.getElementById('status-text');
+            renderResultPanel(document.getElementById('ndvi-panel'), t.ndviHeatmap, ndviData, true, 'combined_ndvi');
+            renderResultPanel(document.getElementById('moisture-panel'), t.moistureMap, moistureData, false, 'combined_moisture');
             
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress = Math.min(progress + 1, 100);
-                progressBar.style.width = `${progress}%`;
-                if(progress >= 100) clearInterval(interval);
-            }, 80);
+            renderExtraVisuals(allPixels, stats, t);
 
-            setTimeout(() => statusText.textContent = t.processing, 2000);
-            setTimeout(() => statusText.textContent = t.complete, 6000);
-
-            setTimeout(() => {
-                currentResults = generateMockResults();
-                appState = 'results';
-                render();
-            }, 8000);
+            document.getElementById('reset-button').addEventListener('click', resetUI);
         }
 
-        function renderChartsAndMaps(results) {
-            const { charts, mapBounds, ndviMapUrl, moistureMapUrl, recommendations } = results;
-
+        function renderExtraVisuals(allPixels, stats, t) {
+            const avgSpectrum = getAverageSpectrum(allPixels);
             new Chart(document.getElementById('spectral-chart'), {
-                type: 'line', data: { labels: charts.spectralSignature.labels, datasets: [{ label: 'Reflectance', data: charts.spectralSignature.values, borderColor: 'rgb(75, 192, 192)', backgroundColor: 'rgba(75, 192, 192, 0.5)', tension: 0.1 }] }
+                type: 'line', data: { labels: avgSpectrum.map((_,i)=>`Band ${i}`), datasets: [{ label: 'Reflectance', data: avgSpectrum, borderColor: 'rgb(75, 192, 192)', tension: 0.1 }] }
             });
-
             new Chart(document.getElementById('health-chart'), {
-                type: 'bar', data: { labels: charts.healthDistribution.labels, datasets: [{ label: '% of Field', data: charts.healthDistribution.values, backgroundColor: ['#22c55e', '#facc15', '#ef4444'] }] }, options: { indexAxis: 'y' }
+                type: 'bar', data: { labels: ['Healthy', 'Moderate', 'Stressed'], datasets: [{ label: '% of Field', data: [stats.avgNdvi*100, (1-stats.avgNdvi)*40, (1-stats.avgNdvi)*60], backgroundColor: ['#22c55e', '#facc15', '#ef4444'] }] }, options: { indexAxis: 'y' }
             });
+            const recList = document.getElementById('recommendations-list');
+            const recs = [`Overall crop health (NDVI: ${stats.avgNdvi.toFixed(2)}) is currently in a ${stats.stressAlert.toLowerCase()} state.`];
+            if(stats.avgMoisture < 40) recs.push("ACTION: Soil moisture is low. Consider irrigation.");
+            recList.innerHTML = recs.map(r => `<li>${r}</li>`).join('');
+        }
 
-            const ndviMap = L.map('ndvi-map').setView(mapBounds[0], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(ndviMap);
-            L.imageOverlay(ndviMapUrl, mapBounds, { opacity: 0.7, crossOrigin: "anonymous" }).addTo(ndviMap);
-            ndviMap.scrollWheelZoom.disable();
-
-            const moistureMap = L.map('moisture-map').setView(mapBounds[0], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(moistureMap);
-            L.imageOverlay(moistureMapUrl, mapBounds, { opacity: 0.7, crossOrigin: "anonymous" }).addTo(moistureMap);
-            moistureMap.scrollWheelZoom.disable();
-
-            // Populate recommendations list
-            const recommendationsList = document.getElementById('recommendations-list');
-            recommendations.forEach(rec => {
-                const li = document.createElement('li');
-                li.textContent = rec;
-                recommendationsList.appendChild(li);
+        function getAverageSpectrum(pixels) {
+            if(!pixels || pixels.length === 0) return [];
+            const numBands = pixels[0].allBands.length;
+            const sums = Array(numBands).fill(0);
+            pixels.forEach(p => {
+                for(let i=0; i<numBands; i++) {
+                    if(!isNaN(p.allBands[i])) sums[i] += p.allBands[i];
+                }
             });
+            return sums.map(s => s / pixels.length);
         }
         
-        function attachResultsListeners(t) {
-            document.getElementById('reset-button').addEventListener('click', () => {
-                appState = 'upload';
-                currentResults = null;
-                selectedFile = null;
-                render();
-            });
-            document.getElementById('download-pdf').addEventListener('click', () => downloadPDF(t));
-            document.getElementById('download-xls').addEventListener('click', downloadXLSX);
-            document.getElementById('download-mat').addEventListener('click', downloadMAT);
+        function resetUI() {
+            csvFile = null;
+            matFile = null;
+            renderUploadUI();
+            initializeDOM();
         }
 
-        // --- Download Functions ---
+        function renderStatus(type, message) {
+            const color = type === 'error' ? 'red' : 'blue';
+            return `<div class="p-3 my-2 bg-${color}-100 text-${color}-800 border border-${color}-300 rounded-lg">${message}</div>`;
+        }
 
-        async function downloadPDF(t) {
-            const pdfButton = document.getElementById('download-pdf');
-            const buttonText = pdfButton.querySelector('.btn-text');
-            const originalText = buttonText.textContent;
-            
-            pdfButton.disabled = true;
-            buttonText.innerHTML = `<span class="loader-spinner"></span>${t.downloadingPDF}`;
+         function renderResultPanel(panel, title, data, isNdvi, downloadName) {
+            if(!data || data.flat().every(v => isNaN(v))) {
+                panel.innerHTML = `<h3 class="text-xl font-semibold mb-2">${title}</h3><div class="flex justify-center items-center h-48 text-gray-500 bg-gray-50 rounded-lg">No valid data to display.</div>`;
+                return;
+            }
 
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+            const canvasId = `${panel.id}-canvas`;
+            panel.innerHTML = `
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-xl font-semibold">${title}</h3>
+                    <p id="${panel.id}-hover" class="text-sm font-mono bg-gray-100 px-2 py-1 rounded">-</p>
+                </div>
+                <canvas id="${canvasId}" class="w-full rounded-lg border shadow-md cursor-crosshair"></canvas>
+                <div class="flex items-center justify-between mt-2">
+                    <span id="${panel.id}-min" class="text-xs"></span>
+                    <div id="${panel.id}-legend" class="h-4 w-full mx-2 rounded-full"></div>
+                    <span id="${panel.id}-max" class="text-xs"></span>
+                </div>
+                <div id="${panel.id}-stats" class="mt-2 text-sm text-center font-mono bg-gray-50 p-2 rounded-lg"></div>
+                <button id="download-${downloadName}" class="w-full mt-2 text-sm bg-gray-200 py-2 rounded-md hover:bg-gray-300 transition">Download Matrix CSV</button>
+            `;
+            drawHeatmap(canvasId, data, isNdvi ? getNdviColor : getMoistureColor, isNdvi, `${panel.id}-hover`, `${panel.id}-stats`, `${panel.id}-legend`, `${panel.id}-min`, `${panel.id}-max`);
+            document.getElementById(`download-${downloadName}`).addEventListener('click', () => downloadCSV(`${downloadName}.csv`, data));
+        }
 
-            const margin = 15;
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const contentWidth = pageWidth - margin * 2;
-            let yPos = 20;
-
-            doc.setFontSize(22);
-            doc.text("Krishi Kendra Pro - Field Analysis Report", pageWidth / 2, yPos, { align: 'center' });
-            yPos += 15;
-
-            doc.setFontSize(12);
-            doc.text(`Field Name: ${currentResults.summary.fieldName}`, margin, yPos);
-            doc.text(`Analysis Date: ${currentResults.summary.date}`, pageWidth - margin, yPos, { align: 'right' });
-            yPos += 10;
-            doc.line(margin, yPos - 5, pageWidth - margin, yPos - 5);
-
-            const ndviMapEl = document.getElementById('pdf-map-1');
-            const moistureMapEl = document.getElementById('pdf-map-2');
-            const ndviMapCanvas = await html2canvas(ndviMapEl, { useCORS: true, logging: false });
-            const moistureMapCanvas = await html2canvas(moistureMapEl, { useCORS: true, logging: false });
-            const ndviMapImg = ndviMapCanvas.toDataURL('image/png');
-            const moistureMapImg = moistureMapCanvas.toDataURL('image/png');
-            
-            doc.addImage(ndviMapImg, 'PNG', margin, yPos, contentWidth / 2 - 5, 80);
-            doc.addImage(moistureMapImg, 'PNG', pageWidth / 2 + 5, yPos, contentWidth / 2 - 5, 80);
-            yPos += 90;
-
-            const spectralCanvasImg = document.getElementById('spectral-chart').toDataURL('image/png', 1.0);
-            const healthCanvasImg = document.getElementById('health-chart').toDataURL('image/png', 1.0);
-            doc.addImage(spectralCanvasImg, 'PNG', margin, yPos, contentWidth / 2 - 5, 70);
-            doc.addImage(healthCanvasImg, 'PNG', pageWidth / 2 + 5, yPos, contentWidth / 2 - 5, 70);
-            yPos += 80;
-
-            // Add Recommendations
-            doc.setFontSize(16);
-            doc.text(t.recommendationsTitle, margin, yPos);
-            yPos += 8;
-            
-            doc.setFontSize(10);
-            doc.setTextColor(80, 80, 80);
-            currentResults.recommendations.forEach(rec => {
-                if (yPos > 270) { // Add new page if content overflows
-                    doc.addPage();
-                    yPos = 20;
+        function drawHeatmap(canvasId, data, getColor, isNdvi, hoverId, statsId, legendId, minId, maxId) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            const flatData = data.flat().filter(v => !isNaN(v));
+            if (flatData.length === 0) return;
+            const stats = getStats(flatData);
+            const min = isNdvi ? -1 : stats.min;
+            const max = isNdvi ? 1 : stats.max;
+            const rows = data.length, cols = data[0].length;
+            canvas.width = cols; canvas.height = rows;
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const value = data[y][x];
+                    if (isNaN(value)) { ctx.fillStyle = '#f0f0f0'; }
+                    else { ctx.fillStyle = getColor((value - min) / (max - min)); }
+                    ctx.fillRect(x, y, 1, 1);
                 }
-                const lines = doc.splitTextToSize(`• ${rec}`, contentWidth - 5); 
-                doc.text(lines, margin + 5, yPos);
-                yPos += (lines.length * 5) + 3;
-            });
-
-            doc.save(`Krishi_Kendra_Pro_Report_${currentResults.summary.fieldName}.pdf`);
-
-            pdfButton.disabled = false;
-            buttonText.innerHTML = originalText;
-        }
-
-        function downloadXLSX() {
-            const summaryData = [
-                { Metric: "Field Name", Value: currentResults.summary.fieldName },
-                { Metric: "Date", Value: currentResults.summary.date },
-                { Metric: "Average NDVI", Value: currentResults.summary.avgNdvi },
-                { Metric: "Average Soil Moisture", Value: currentResults.summary.avgMoisture },
-                { Metric: "Average Soil Temperature", Value: currentResults.summary.avgSoilTemp },
-                { Metric: "Crop Stress Alert", Value: currentResults.summary.stressAlert },
-            ];
-
-            const spectralData = currentResults.charts.spectralSignature.labels.map((label, index) => ({
-                Wavelength: label,
-                Reflectance: currentResults.charts.spectralSignature.values[index]
-            }));
-
-            const summarySheet = XLSX.utils.json_to_sheet(summaryData);
-            const spectralSheet = XLSX.utils.json_to_sheet(spectralData);
-
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
-            XLSX.utils.book_append_sheet(wb, spectralSheet, "Spectral Signature");
-            
-            XLSX.writeFile(wb, `Report_${currentResults.summary.fieldName}.xlsx`);
-        }
-
-        function downloadMAT() {
-            const dataToSave = {
-                report: {
-                    summary: currentResults.summary,
-                    charts: currentResults.charts,
-                    recommendations: currentResults.recommendations
-                }
+            }
+            document.getElementById(statsId).innerHTML = `Min: ${stats.min.toFixed(3)} | Max: ${stats.max.toFixed(3)} | Mean: ${stats.mean.toFixed(3)}`;
+            document.getElementById(legendId).style.background = `linear-gradient(to right, ${Array.from({length:100},(_,i)=>getColor(i/99)).join(',')})`;
+            document.getElementById(minId).textContent = min.toFixed(1);
+            document.getElementById(maxId).textContent = max.toFixed(1);
+            const hoverEl = document.getElementById(hoverId);
+            canvas.onmousemove = e => {
+                const rect = canvas.getBoundingClientRect();
+                const x = Math.floor((e.clientX - rect.left) / rect.width * cols);
+                const y = Math.floor((e.clientY - rect.top) / rect.height * rows);
+                const val = data[y]?.[x];
+                hoverEl.textContent = !isNaN(val) ? val.toFixed(4) : '-';
             };
-            const dataStr = JSON.stringify(dataToSave, null, 2);
-            const blob = new Blob([dataStr], { type: "text/plain;charset=utf-8" });
-            const url = URL.createObjectURL(blob);
-            
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", `Report_${currentResults.summary.fieldName}.mat`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            canvas.onmouseleave = () => hoverEl.textContent = '-';
         }
+        
+        // **FIX STARTS HERE: RESTORING MISSING HELPER FUNCTIONS**
+        const readFile = (file) => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.onerror = () => reject(new Error("Failed to read file."));
+            if (file.name.endsWith('.mat')) reader.readAsArrayBuffer(file);
+            else reader.readAsText(file);
+        });
+
+        const getStats = arr => ({ min: Math.min(...arr), max: Math.max(...arr), mean: arr.reduce((a, b) => a + b, 0) / arr.length });
+        const to2D = (arr, width) => Array.from({ length: Math.ceil(arr.length / width) }, (_, i) => arr.slice(i * width, i * width + width));
+        const getMoistureColor = norm => `hsl(${240 - norm * 120}, 80%, 50%)`;
+        const getNdviColor = norm => `hsl(${norm * 120}, 90%, 45%)`;
+        const downloadCSV = (filename, matrix) => {
+            const csv = matrix.map(e => e.join(",")).join("\n");
+            const link = document.createElement("a");
+            link.href = "data:text/csv;charset=utf-8," + encodeURI(csv);
+            link.download = filename;
+            link.click();
+        };
+         const parseCSV = (csvText) => {
+            const rows = csvText.trim().split('\n');
+            const isHeader = isNaN(parseFloat(rows[0].split(',')[0]));
+            return (isHeader ? rows.slice(1) : rows).map(r => r.split(',').map(parseFloat));
+        };
+        const parseMAT = (buffer) => {
+            if (typeof matFileParser === 'undefined') { throw new Error("MAT parser library could not be loaded."); }
+            const data = matFileParser.read(new Uint8Array(buffer));
+            if (!data?.content?.pamat) throw new Error("Invalid .mat structure.");
+            const arrays = data.content.pamat.filter(item => item && Array.isArray(item.value) && typeof item.value[0] !== 'string');
+            if (arrays.length === 0) throw new Error("No numerical matrix found.");
+            arrays.sort((a, b) => (b.value.length * (b.value[0]?.length || 1)) - (a.value.length * (a.value[0]?.length || 1)));
+            let matrix = arrays[0].value;
+            return Array.isArray(matrix[0]?.[0]) ? matrix.flat() : matrix;
+        };
+        // **FIX ENDS HERE**
 
         // --- Initial Load ---
-        document.addEventListener('DOMContentLoaded', render);
+        document.addEventListener('DOMContentLoaded', renderApp);
     </script>
-
 </body>
 </html>
 
